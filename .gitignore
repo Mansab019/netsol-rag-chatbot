@@ -1,7 +1,5 @@
-cat > .gitignore << 'EOF'
 venv/
 __pycache__/
 *.pyc
 chroma_db/
 .env
-EOF
