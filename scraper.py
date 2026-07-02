@@ -5,8 +5,8 @@ from bs4 import BeautifulSoup
 pages = {
     "homepage": "https://netsoltech.com/en-us",
     "cloud_services": "https://netsoltech.com/services/cloud-services",
-    "emerging_tech": "https://netsoltech.com/services/emerging-technologies",
-    "information_security": "https://netsoltech.com/services/information-security",
+    "ai_transcend_labs": "https://netsoltech.com/blog/ai-driven-enhancements-with-transcend-ai-labs",
+    "q2_2026_earnings": "https://ir.netsoltech.com/press-releases/detail/3255/netsol-technologies-reports-21-year-over-year-growth-in",
     "company_info": "https://ir.netsoltech.com/company-information",
 }
 
@@ -44,3 +44,5 @@ def scrape_and_save(pages):
             print(f"Skipped (failed fetch): {name}")
             
             
+if __name__ == "__main__":
+    scrape_and_save(pages)
