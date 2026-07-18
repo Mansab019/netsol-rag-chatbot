@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NETSOL Assistant</title>
+<style>
+  :root {
+    --bg: #0e1420;
+    --panel: #141b2b;
+    --border: #232d42;
+    --text: #e6e9f0;
+    --muted: #7c8aa5;
+    --accent: #3fd0c9;
+    --accent-dim: #1c3d3a;
+    --user-bubble: #1f2a42;
+    --bot-bubble: #182234;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 720px;
+    height: 92vh;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+
+  header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.3px;
+  }
+
+  header span {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: auto;
+    font-family: 'Consolas', monospace;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .messages::-webkit-scrollbar { width: 6px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .turn {
+    display: flex;
+    flex-direction: column;
+    max-width: 82%;
+    animation: rise 0.25s ease;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .turn.user { align-self: flex-end; align-items: flex-end; }
+  .turn.bot { align-self: flex-start; align-items: flex-start; }
+
+  .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    padding: 0 4px;
+  }
+
+  .bubble {
+    padding: 11px 15px;
+    border-radius: 12px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .user .bubble {
+    background: var(--user-bubble);
+    border-bottom-right-radius: 3px;
+  }
+
+  .bot .bubble {
+    background: var(--bot-bubble);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 3px;
+  }
+
+  .bot .bubble.thinking {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .bot .bubble.error {
+    border-color: #5a2a2a;
+    color: #e08585;
+  }
+
+  .empty-state {
+    margin: auto;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13.5px;
+    max-width: 320px;
+    line-height: 1.6;
+  }
+
+  .empty-state strong {
+    color: var(--text);
+    display: block;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  form {
+    display: flex;
+    gap: 10px;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 9px;
+    font-size: 14px;
+    outline: none;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  button {
+    background: var(--accent);
+    color: #06231f;
+    border: none;
+    padding: 0 20px;
+    border-radius: 9px;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  button:hover { opacity: 0.88; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="dot"></div>
+    <h1>NETSOL Assistant</h1>
+    <span id="status">/chat · localhost:8000</span>
+  </header>
+
+  <div class="messages" id="messages">
+    <div class="empty-state" id="emptyState">
+      <strong>Ask about NETSOL</strong>
+      Try "What is NETSOL?" or "What was the Q2 revenue?" — follow-up questions carry context automatically.
+    </div>
+  </div>
+
+  <form id="chatForm">
+    <input type="text" id="questionInput" placeholder="Ask a question..." autocomplete="off" />
+    <button type="submit" id="sendBtn">Send</button>
+  </form>
+</div>
+
+<script>
+  const API_URL = "http://127.0.0.1:8000/chat";
+
+  const form = document.getElementById("chatForm");
+  const input = document.getElementById("questionInput");
+  const messages = document.getElementById("messages");
+  const sendBtn = document.getElementById("sendBtn");
+  const emptyState = document.getElementById("emptyState");
+  const status = document.getElementById("status");
+
+  function addTurn(role, text, extraClass) {
+    if (emptyState) emptyState.remove();
+
+    const turn = document.createElement("div");
+    turn.className = "turn " + role;
+
+    const label = document.createElement("div");
+    label.className = "label";
+    label.textContent = role === "user" ? "You" : "Assistant";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble" + (extraClass ? " " + extraClass : "");
+    bubble.textContent = text;
+
+    turn.appendChild(label);
+    turn.appendChild(bubble);
+    messages.appendChild(turn);
+    messages.scrollTop = messages.scrollHeight;
+
+    return bubble;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const question = input.value.trim();
+    if (!question) return;
+
+    addTurn("user", question);
+    input.value = "";
+    sendBtn.disabled = true;
+    status.textContent = "thinking...";
+
+    const thinkingBubble = addTurn("bot", "Generating answer...", "thinking");
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+
+      if (!response.ok) {
+        throw new Error("Server returned " + response.status);
+      }
+
+      const data = await response.json();
+      thinkingBubble.textContent = data.answer;
+      thinkingBubble.classList.remove("thinking");
+    } catch (err) {
+      thinkingBubble.textContent = "Couldn't reach the server. Is uvicorn running on port 8000?";
+      thinkingBubble.classList.remove("thinking");
+      thinkingBubble.classList.add("error");
+    } finally {
+      sendBtn.disabled = false;
+      status.textContent = "/chat · localhost:8000";
+      input.focus();
+    }
+  });
+
+  input.focus();
+</script>
+
+</body>
+</html>

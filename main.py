@@ -5,7 +5,18 @@ import chromadb
 import ollama
 
 app = FastAPI()
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 conversation_history = []
+
 class ChatRequest(BaseModel):
     # TODO: what field(s) do we need here? (hint: just the user's question, for now)
     question: str
@@ -19,7 +30,7 @@ def chat(request: ChatRequest):
     add_to_history(request.question, answer)
     return {"question": request.question, "answer": answer}
 
-def retrieve_chunks(question, top_k=3):
+def retrieve_chunks(question, top_k=5):
     question_embedding = get_embedding(question)
     
     client = chromadb.PersistentClient(path="chroma_db")
