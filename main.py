@@ -5,7 +5,7 @@ import chromadb
 import ollama
 
 app = FastAPI()
-
+conversation_history = []
 class ChatRequest(BaseModel):
     # TODO: what field(s) do we need here? (hint: just the user's question, for now)
     question: str
@@ -16,6 +16,7 @@ def chat(request: ChatRequest):
     chunks = retrieve_chunks(request.question)
     prompt = build_prompt(request.question, chunks)
     answer = get_answer(prompt)
+    add_to_history(request.question, answer)
     return {"question": request.question, "answer": answer}
 
 def retrieve_chunks(question, top_k=3):
@@ -35,10 +36,11 @@ def retrieve_chunks(question, top_k=3):
     
 def build_prompt(question, chunks):
     context = "\n\n".join(chunks)
+    history = format_history()
     
     prompt = f"""Answer the question using only the context below. If the answer isn't in the context, say you don't know.
 
-Context:
+{history}Context:
 {context}
 
 Question:
@@ -53,8 +55,22 @@ def get_answer(prompt):
     answer = response["response"]
     return answer
 
+def add_to_history(question, answer):
+    conversation_history.append({"question": question, "answer": answer})
+    
+    
+def format_history():
+    if not conversation_history:
+        return "No conversation history."
+    history_text = ""
+    for turn in conversation_history:
+        history_text += f"Q: {turn['question']}\nA: {turn['answer']}\n\n"
+    return history_text.strip()
+
+    
 if __name__ == "__main__":
     test_chunks = retrieve_chunks("What is netsol")
     test_prompt = build_prompt("What is netsol", test_chunks)
     test_answer = get_answer(test_prompt)
+    add_to_history("What is netsol", test_answer)
     print(test_answer)
